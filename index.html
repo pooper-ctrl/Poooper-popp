@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Poop Leah Poop</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<style>
+  :root {
+    --bg: #0e0e12;
+    --panel: #171720;
+    --accent: #9ae6b4;
+    --accent2: #ffa94d;
+    --text: #e6e6f0;
+    --muted: #9aa0a6;
+    --danger: #ff6b6b;
+    --good: #8ce99a;
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; }
+  #root { display: grid; grid-template-columns: 1fr 380px; gap: 12px; padding: 12px; height: 100%; box-sizing: border-box; }
+  #left { display: grid; grid-template-rows: auto 1fr; gap: 8px; min-width: 280px; }
+  #titlebar { display:flex; align-items:center; justify-content:space-between; background: var(--panel); border:1px solid #202235; border-radius: 8px; padding: 8px 12px;}
+  #titlebar h1 { margin: 0; font-size: 18px; letter-spacing: .5px; }
+  #titlebar .small { color: var(--muted); font-size: 12px; }
+  #gamewrap { background: var(--panel); border:1px solid #202235; border-radius: 8px; padding: 8px; display:grid; grid-template-rows: 1fr auto; }
+  canvas { width: 100%; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; background:#10121a; border-radius: 6px; display:block; }
+  #hud { display:grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top:8px; }
+  .bar { background:#0d0f18; border:1px solid #1b1f30; border-radius:6px; padding:6px; }
+  .bar .label { font-size:11px; color:var(--muted); display:flex; justify-content:space-between; }
+  .gauge { height:8px; background:#0b0e16; border:1px solid #1b1f30; border-radius:4px; overflow:hidden; margin-top:4px; }
+  .fill { height:100%; background: linear-gradient(90deg, #5eead4, #60a5fa); width:0%; transition: width .2s ease-out; }
+  #right { display:grid; grid-template-rows: auto auto 1fr auto; gap: 8px; min-height: 0; }
+  .panel { background: var(--panel); border:1px solid #202235; border-radius: 8px; padding: 10px; }
+  #actions { display:grid; grid-template-columns: 1fr 1fr; gap:6px; }
+  button { background:#161a2a; color:var(--text); border:1px solid #2a3150; border-radius:6px; padding:10px 8px; font-weight:600; cursor:pointer; }
+  button:hover { border-color:#3a4370; }
+  button:active { transform: translateY(1px); }
+  button[disabled] { opacity:.5; cursor:not-allowed; }
+  .row { display:flex; gap:6px; flex-wrap: wrap; }
+  .pill { background:#121424; border:1px solid #242a45; padding:6px 8px; border-radius:999px; font-size:12px; color: var(--muted); }
+  #log { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; font-size:12px; color:#cbd5e1; height:100%; overflow:auto; white-space:pre-wrap; }
+  #footer { font-size: 12px; color: var(--muted); display:flex; align-items:center; justify-content:space-between; }
+  .good { color: var(--good); }
+  .bad { color: var(--danger); }
+  .accent { color: var(--accent2); }
+  .popup { position: fixed; top: 16px; right: 16px; background:#101425; border:1px solid #2a3150; color:#e6e6f0; padding:10px 12px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,.35); font-size:13px; z-index:10; opacity:0; transform: translateY(-8px); transition: opacity .2s, transform .2s; }
+  .popup.show { opacity:1; transform: translateY(0); }
+  #audioUI { display:flex; align-items:center; gap:8px; }
+  input[type="range"] { width: 120px; }
+  @media (max-width: 900px) {
+    #root { grid-template-columns: 1fr; grid-template-rows: auto auto; }
+  }
+</style>
+</head>
+<body>
+<div id="root">
+  <div id="left">
+    <div id="titlebar">
+      <h1>💩 Poop Leah Poop</h1>
+      <div class="small">
+        Day <span id="dayNum">1</span> • <span id="timeStr">06:00</span> • Streak <span id="streak">0</span> • <span id="weatherTag">Sunny</span>
+      </div>
+    </div>
+    <div id="gamewrap">
+      <canvas id="game" width="256" height="192" aria-label="Poop Leah Poop game canvas"></canvas>
+      <div id="hud">
+        <div class="bar"><div class="label"><span>Fiber</span><span id="fiberVal">0</span></div><div class="gauge"><div class="fill" id="fiberBar"></div></div></div>
+        <div class="bar"><div class="label"><span>Hydration</span><span id="hydrationVal">0</span></div><div class="gauge"><div class="fill" id="hydrationBar"></div></div></div>
+        <div class="bar"><div class="label"><span>Stress</span><span id="stressVal">0</span></div><div class="gauge"><div class="fill" id="stressBar"></div></div></div>
+        <div class="bar"><div class="label"><span>Motility</span><span id="motilityVal">0</span></div><div class="gauge"><div class="fill" id="motilityBar"></div></div></div>
+        <div class="bar"><div class="label"><span>Urge</span><span id="urgeVal">0</span></div><div class="gauge"><div class="fill" id="urgeBar"></div></div></div>
+        <div class="bar"><div class="label"><span>Energy</span><span id="energyVal">0</span></div><div class="gauge"><div class="fill" id="energyBar"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="right">
+    <div class="panel">
+      <div class="row" style="margin-bottom:6px;">
+        <span class="pill">Goal: poop ≥ 1× / day</span>
+        <span class="pill">Day length: ~90s</span>
+        <span class="pill">Weather affects walks</span>
+        <span class="pill">Autosaves</span>
+      </div>
+      <div id="actions">
+        <button id="feedBeans">Feed Beans 🫘</button>
+        <button id="giveWater">Give Water 💧</button>
+        <button id="takeWalk">Take Walk 🚶</button>
+        <button id="relax">Relax 📖</button>
+        <button id="sitToilet">Sit on Toilet 🚽</button>
+        <button id="tryPoop" class="accent">Try to Poop 💩</button>
+        <button id="yogurt">Yogurt 🥣</button>
+        <button id="coffee">Coffee ☕</button>
+        <button id="chili">Chili Roulette 🌶️</button>
+        <button id="nap">Power Nap 😴</button>
+        <button id="nextDay">Skip to Next Day ⏭️</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <div><strong>Status:</strong> <span id="status">Ready</span></div>
+        <div id="audioUI">
+          🔊
+          <input type="range" min="0" max="1" step="0.01" id="vol">
+          <button id="muteBtn" title="Mute / Unmute">Mute</button>
+        </div>
+      </div>
+      <div style="margin-top:6px">
+        <strong>Rules of the Gut:</strong>
+        <div style="font-size:12px; color:var(--muted); line-height:1.4; margin-top:4px;">
+          Fiber + Hydration + Motility raise the 💩 urge. Stress lowers success. Toilet time helps.
+          Weather changes walk gains. Coffee is spicy science: big urge now, possible stress/jitters later.
+          Miss two days in a row and it’s soft-reset city.
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="min-height: 160px;">
+      <strong>Event Log + Achievements</strong>
+      <div id="log"></div>
+    </div>
+
+    <div id="footer" class="panel">
+      <div class="row">
+        <button id="reset">Reset Save</button>
+        <button id="testSnd">Test Sound</button>
+      </div>
+      <div>Built with canvas, pixels & beeps • v1.2</div>
+    </div>
+  </div>
+</div>
+
+<div id="popup" class="popup" role="status" aria-live="polite"></div>
+
+<script>
+/* ---------------------------
+   Core helpers
+----------------------------*/
+const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+const rnd = (a,b)=>Math.random()*(b-a)+a;
+const chance = (p)=>Math.random()<p;
+
+const SAVE_KEY = "poop-leah-poop-v12";
+
+/* ---------------------------
+   WebAudio: tiny synth
+----------------------------*/
+const Sound = (() => {
+  const ctx = new (window.AudioContext||window.webkitAudioContext)();
+  let master = ctx.createGain(); master.gain.value = 0.5; master.connect(ctx.destination);
+  let muted = false;
+
+  function envTone({type="sine", freq=440, dur=0.15, a=0.002, d=0.06, s=0.3, r=0.08, vol=0.4, bend=0}) {
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    if (bend) osc.frequency.setTargetAtTime(freq*(1+bend), t0, 0.04);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(vol, t0 + a);
+    g.gain.linearRampToValueAtTime(vol*s, t0 + a + d);
+    g.gain.linearRampToValueAtTime(0.0001, t0 + dur + r);
+    osc.connect(g); g.connect(master);
+    osc.start(t0); osc.stop(t0 + dur + r + 0.05);
+  }
+
+  function noise({dur=0.12, vol=0.3, lp=1800}) {
+    const t0 = ctx.currentTime;
+    const buffer = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i=0;i<data.length;i++) data[i] = Math.random()*2-1;
+    const src = ctx.createBufferSource(); src.buffer = buffer;
+    const g = ctx.createGain(); g.gain.value = vol;
+    const flt = ctx.createBiquadFilter(); flt.type="lowpass"; flt.frequency.value = lp;
+    src.connect(flt); flt.connect(g); g.connect(master);
+    src.start(t0); src.stop(t0 + dur);
+  }
+
+  const api = {
+    ctx,
+    setVolume(v){ master.gain.value = clamp(v,0,1); },
+    toggleMute(){ muted = !muted; master.gain.value = muted ? 0 : volSlider.valueAsNumber; return muted; },
+    click(){ envTone({type:"square", freq:420, dur:0.08, vol:0.25}); },
+    bean(){ envTone({type:"triangle", freq:220, dur:0.12, vol:0.35}); },
+    water(){ noise({dur:0.10, vol:0.15, lp:1200}); envTone({type:"sine", freq:820, dur:0.05, vol:0.2}); },
+    walk(){ envTone({type:"square", freq:150, dur:0.06, vol:0.18}); },
+    relax(){ envTone({type:"sine", freq:340, dur:0.2, vol:0.18, bend:-0.2}); },
+    toilet(){ envTone({type:"triangle", freq:260, dur:0.12, vol:0.25}); },
+    try(){ envTone({type:"sawtooth", freq:240, dur:0.12, vol:0.2}); },
+    success(){ noise({dur:0.08, vol:0.25, lp:2500}); envTone({type:"square", freq:520, dur:0.14, vol:0.28}); envTone({type:"square", freq:660, dur:0.18, vol:0.24}); },
+    fail(){ envTone({type:"sawtooth", freq:220, dur:0.22, vol:0.2, bend:-0.35}); },
+    nap(){ envTone({type:"sine", freq:180, dur:0.25, vol:0.18}); },
+    popup(){ envTone({type:"triangle", freq:720, dur:0.12, vol:0.24}); },
+    coffee(){ envTone({type:"square", freq:880, dur:0.08, vol:0.22}); },
+    yogurt(){ envTone({type:"sine", freq:480, dur:0.1, vol:0.2}); },
+    chili(){ envTone({type:"sawtooth", freq:560, dur:0.1, vol:0.22}); },
+  };
+  return api;
+})();
+
+/* ---------------------------
+   State
+----------------------------*/
+const defaultState = () => ({
+  day: 1,
+  time: 6*60,
+  streak: 0,
+  missedYesterday: false,
+  poopedToday: false,
+  weather: "Sunny", // Sunny | Breezy | Rainy | Heatwave
+  stats: { fiber: 20, hydration: 35, stress: 25, motility: 20, urge: 10, energy: 70 },
+  pos: { x: 64, y: 96 },
+  where: "room",
+  cheevos: {} // id -> true
+});
+
+let state = load() || defaultState();
+let lastTick = performance.now();
+let daySeconds = 90;
+let minutesPerSecond = (24*60) / daySeconds;
+
+/* ---------------------------
+   Save / Load
+----------------------------*/
+function save(){ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+function load(){ try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } catch(e){ return null; } }
+function resetSave(){
+  localStorage.removeItem(SAVE_KEY);
+  state = defaultState();
+  logMsg("Save reset. Fresh bowels, fresh start.");
+}
+
+/* ---------------------------
+   UI refs
+----------------------------*/
+const el = (id)=>document.getElementById(id);
+const dayNum = el("dayNum"), timeStr = el("timeStr"), streak = el("streak"), weatherTag = el("weatherTag");
+const fiberBar = el("fiberBar"), hydrationBar = el("hydrationBar"), stressBar = el("stressBar");
+const motilityBar = el("motilityBar"), urgeBar = el("urgeBar"), energyBar = el("energyBar");
+const fiberVal = el("fiberVal"), hydrationVal = el("hydrationVal"), stressVal = el("stressVal");
+const motilityVal = el("motilityVal"), urgeVal = el("urgeVal"), energyVal = el("energyVal");
+const statusEl = el("status"), logEl = el("log"), popupEl = el("popup");
+const volSlider = el("vol"), muteBtn = el("muteBtn");
+
+/* ---------------------------
+   HUD
+----------------------------*/
+function updateHUD() {
+  dayNum.textContent = state.day;
+  timeStr.textContent = fmtTime(state.time);
+  streak.textContent = state.streak;
+  weatherTag.textContent = state.weather;
+  const S = state.stats;
+  const setBar = (bar,val)=>bar.style.width = clamp(val,0,100)+"%";
+  setBar(fiberBar, S.fiber); fiberVal.textContent = Math.round(S.fiber);
+  setBar(hydrationBar, S.hydration); hydrationVal.textContent = Math.round(S.hydration);
+  setBar(stressBar, S.stress); stressVal.textContent = Math.round(S.stress);
+  setBar(motilityBar, S.motility); motilityVal.textContent = Math.round(S.motility);
+  setBar(urgeBar, S.urge); urgeVal.textContent = Math.round(S.urge);
+  setBar(energyBar, S.energy); energyVal.textContent = Math.round(S.energy);
+}
+function status(msg, cls=""){ statusEl.textContent = msg; statusEl.className = cls; }
+function logMsg(text) {
+  const now = fmtTime(state.time);
+  const line = `[${now}] ${text}
+`;
+  logEl.textContent += line;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function popup(msg){
+  popupEl.textContent = msg;
+  popupEl.classList.add("show");
+  Sound.popup();
+  setTimeout(()=>popupEl.classList.remove("show"), 1600);
+}
+
+/* ---------------------------
+   Time & metabolism
+----------------------------*/
+function fmtTime(mins){ let m = Math.floor(mins) % (24*60); let h = Math.floor(m/60), mm = m%60; return String(h).padStart(2,'0')+":"+String(mm).padStart(2,'0'); }
+
+function advanceMinutes(mins) {
+  state.time += mins;
+  tickMetabolism(mins);
+  checkDayWrap();
+  save();
+}
+
+function weatherWalkMultiplier() {
+  switch (state.weather) {
+    case "Breezy": return 1.1;
+    case "Rainy": return 0.85;
+    case "Heatwave": return 0.75;
+    default: return 1.0; // Sunny
+  }
+}
+
+function tickMetabolism(mins) {
+  const S = state.stats;
+  S.fiber = clamp(S.fiber - mins*0.03, 0, 120);
+  S.hydration = clamp(S.hydration - mins*0.04, 0, 120);
+  S.motility = clamp(S.motility - mins*0.025, 0, 120);
+  S.energy = clamp(S.energy - mins*0.03, 0, 100);
+
+  // Urge accumulation
+  const gutSync = (S.fiber*0.022 + S.hydration*0.018 + S.motility*0.024) * (1 - S.stress/180);
+  const circadian = (state.time % (24*60));
+  const morningBoost = (circadian>360 && circadian<720) ? 1.25 : 1.0;
+  const urgeDelta = mins * 0.06 * morningBoost + mins * gutSync/1000;
+  S.urge = clamp(S.urge + urgeDelta, 0, 140);
+
+  // Coffee aftershock (jitters) if flagged
+  if (coffeeTimer > 0) {
+    coffeeTimer -= mins;
+    if (coffeeTimer <= 0) {
+      // aftershock hits once
+      S.stress = clamp(S.stress + 12, 0, 100);
+      S.energy = clamp(S.energy - 8, 0, 100);
+      logMsg("Coffee jitters arrive late. Stress +12, Energy -8.");
+    }
+  }
+
+  if (S.stress > 70) S.motility = clamp(S.motility - mins*0.02, 0, 120);
+
+  // Tiny randoms
+  if (chance(mins/300)) {
+    const k = Math.random();
+    if (k < 0.33) { S.stress = clamp(S.stress - 3, 0, 100); logMsg("Deep breath helps."); }
+    else if (k < 0.66) { S.motility = clamp(S.motility + 3, 0, 120); logMsg("Gentle stretch aids motility."); }
+    else { S.hydration = clamp(S.hydration + 2, 0, 120); logMsg("A bonus sip sneaks in."); }
+  }
+}
+
+function checkDayWrap(){ if (state.time >= 24*60) endOfDay(false); }
+
+function rollWeather(){
+  const r = Math.random();
+  state.weather = r < 0.55 ? "Sunny" : r < 0.75 ? "Breezy" : r < 0.92 ? "Rainy" : "Heatwave";
+  weatherTag.textContent = state.weather;
+  logMsg(`New day's weather: ${state.weather}.`);
+}
+
+/* ---------------------------
+   Achievements
+----------------------------*/
+const CHEEVOS = [
+  { id:"first_poop", name:"First Relief", cond:(s)=>s.poopedToday && s.streak===1 },
+  { id:"three_streak", name:"Triple Threat", cond:(s)=>s.streak===3 },
+  { id:"bean_queen", name:"Bean Queen", cond:()=>statsCounters.beans>=5 },
+  { id:"coffee_science", name:"Caffeine Scientist", cond:()=>statsCounters.coffee>=3 },
+  { id:"yogurt_friend", name:"Probiotic Pal", cond:()=>statsCounters.yogurt>=3 },
+  { id:"chili_brave", name:"Scoville Survivor", cond:()=>statsCounters.chili>=1 },
+];
+function checkCheevos() {
+  for (const c of CHEEVOS) {
+    if (!state.cheevos[c.id] && c.cond(state)) {
+      state.cheevos[c.id] = true;
+      popup(`🏆 ${c.name}`);
+      logMsg(`Achievement unlocked: ${c.name}`);
+    }
+  }
+}
+
+/* ---------------------------
+   Actions
+----------------------------*/
+const statsCounters = { beans:0, coffee:0, yogurt:0, chili:0 };
+let coffeeTimer = 0; // minutes until aftershock
+
+const actions = {
+  feedBeans() {
+    const S = state.stats;
+    const delta = chance(0.3) ? 22 : 15;
+    S.fiber = clamp(S.fiber + delta, 0, 120);
+    S.energy = clamp(S.energy - 5, 0, 100);
+    S.stress = clamp(S.stress - 3, 0, 100);
+    advanceMinutes(10);
+    statsCounters.beans++;
+    Sound.bean();
+    logMsg(`Leah eats beans. Fiber +${delta}.`);
+    status("Beans consumed.", "good");
+  },
+  giveWater() {
+    const S = state.stats;
+    const delta = 18;
+    S.hydration = clamp(S.hydration + delta, 0, 120);
+    S.energy = clamp(S.energy - 2, 0, 100);
+    advanceMinutes(5);
+    Sound.water();
+    logMsg(`Hydration +${delta}. The gut river flows.`);
+    status("Glug glug.", "good");
+  },
+  takeWalk() {
+    const S = state.stats;
+    const mult = weatherWalkMultiplier();
+    S.motility = clamp(S.motility + 16*mult, 0, 120);
+    S.stress = clamp(S.stress - 10, 0, 100);
+    S.energy = clamp(S.energy - (12 / mult), 0, 100);
+    state.where = "outside";
+    wobbleTo(180, 140);
+    advanceMinutes(25);
+    Sound.walk();
+    logMsg(`Walk taken (${state.weather}). Motility ↑, Stress ↓.`);
+    status("Stride of pride.", "good");
+  },
+  relax() {
+    const S = state.stats;
+    S.stress = clamp(S.stress - 14, 0, 100);
+    S.energy = clamp(S.energy + 8, 0, 100);
+    advanceMinutes(20);
+    state.where = "room";
+    wobbleTo(64, 96);
+    Sound.relax();
+    logMsg("Leah relaxes with a book. Stress melts.");
+    status("Parasympathetic unlocked.", "good");
+  },
+  sitToilet() {
+    state.where = "bathroom";
+    wobbleTo(220, 80);
+    advanceMinutes(8);
+    const S = state.stats;
+    S.stress = clamp(S.stress - 4, 0, 100);
+    Sound.toilet();
+    logMsg("Leah sits on the porcelain throne. Focus intensifies.");
+    status("On the throne.", "");
+  },
+  tryPoop() {
+    const S = state.stats;
+    Sound.try();
+    const locationBonus = state.where === "bathroom" ? 1.15 : 0.9;
+    const urgeScore = S.urge * locationBonus;
+    const calmFactor = clamp(100 - S.stress, 10, 100) / 100;
+    const energyFactor = clamp(S.energy, 20, 100) / 100;
+    const base = urgeScore * calmFactor * energyFactor;
+    const threshold = 60 + Math.min(20, (state.day-1)*1.2);
+
+    if (base >= threshold && S.urge >= 40) {
+      const relief = Math.min(45, 20 + Math.round((base-threshold)/2));
+      S.urge = clamp(S.urge - relief, 0, 100);
+      S.stress = clamp(S.stress - 12, 0, 100);
+      S.energy = clamp(S.energy + 10, 0, 100);
+      S.motility = clamp(S.motility - 6, 0, 100);
+      state.poopedToday = true;
+      advanceMinutes(6);
+      confetti(6);
+      Sound.success();
+      unlockOnce("first_poop");
+      logMsg("💩 SUCCESS! A majestic deposit is made. Relief floods the land.");
+      status("Poop achieved!", "good");
+    } else {
+      S.stress = clamp(S.stress + 6, 0, 100);
+      advanceMinutes(6);
+      Sound.fail();
+      logMsg("A valiant push, but destiny says 'not yet.' (Raise Urge, lower Stress.)");
+      status("No dice. Build the urge, calm the mind.", "bad");
+    }
+    checkCheevos();
+  },
+  yogurt() {
+    const S = state.stats;
+    S.motility = clamp(S.motility + 10, 0, 120);
+    S.stress = clamp(S.stress - 4, 0, 100);
+    advanceMinutes(8);
+    statsCounters.yogurt++;
+    Sound.yogurt();
+    logMsg("Yogurt probiotic parade: Motility +10, Stress -4.");
+    status("Gut flora throwing confetti.", "good");
+  },
+  coffee() {
+    const S = state.stats;
+    const spike = 20 + Math.floor(Math.random()*10);
+    S.urge = clamp(S.urge + spike, 0, 140);
+    S.energy = clamp(S.energy + 6, 0, 100);
+    // schedule aftershock in ~60 in-game minutes
+    coffeeTimer = 60;
+    advanceMinutes(5);
+    statsCounters.coffee++;
+    Sound.coffee();
+    logMsg(`Coffee! Urge +${spike} now; jitters may arrive later.`);
+    status("Gastrocolic reflex engaged.", "good");
+  },
+  chili() {
+    const S = state.stats;
+    const roll = Math.random();
+    let msg="";
+    if (roll < 0.5) { S.motility = clamp(S.motility + 16, 0, 120); msg="motility rocket"; }
+    else if (roll < 0.8) { S.stress = clamp(S.stress + 8, 0, 100); msg="spice anxiety"; }
+    else { S.urge = clamp(S.urge + 24, 0, 140); msg="urgent rumble"; }
+    S.energy = clamp(S.energy - 4, 0, 100);
+    advanceMinutes(12);
+    statsCounters.chili++;
+    Sound.chili();
+    logMsg(`Chili roulette triggers ${msg}.`);
+    status("Flavor meets physics.", "");
+  },
+  nap() {
+    const S = state.stats;
+    S.energy = clamp(S.energy + 22, 0, 100);
+    S.stress = clamp(S.stress - 6, 0, 100);
+    advanceMinutes(40);
+    state.where = "room";
+    wobbleTo(40, 150);
+    Sound.nap();
+    logMsg("Power nap achieved. Energy restored.");
+    status("Snooze fuels moves.", "");
+  },
+  nextDay() { endOfDay(true); }
+};
+
+function unlockOnce(id){ if(!state.cheevos[id]){ state.cheevos[id]=true; popup("🏆 "+(CHEEVOS.find(c=>c.id===id)?.name||id)); }}
+
+// Wire buttons
+const btnIds = Object.keys(actions);
+for (const id of btnIds) el(id).addEventListener("click", ()=>{ actions[id](); Sound.click(); });
+el("reset").addEventListener("click", ()=>{ resetSave(); save(); Sound.click(); });
+el("testSnd").addEventListener("click", ()=>{ Sound.success(); });
+volSlider.value = 0.6; Sound.setVolume(volSlider.valueAsNumber);
+volSlider.addEventListener("input", ()=> Sound.setVolume(volSlider.valueAsNumber));
+muteBtn.addEventListener("click", ()=>{ const m=Sound.toggleMute(); muteBtn.textContent = m ? "Unmute" : "Mute"; });
+
+/* ---------------------------
+   Day cycle
+----------------------------*/
+function endOfDay(manualSkip) {
+  const pooped = state.poopedToday;
+  if (pooped) {
+    state.streak += 1;
+    state.missedYesterday = false;
+    logMsg(`Day ${state.day} complete ✅. Pooped at least once. Streak +1!`);
+    status("Daily gut quest complete.", "good");
+  } else {
+    if (state.missedYesterday) {
+      logMsg(`Day ${state.day} missed again ❌. The colon rebels. Game over (soft reset).`);
+      status("Two misses—soft reset.", "bad");
+      state = defaultState();
+      save();
+      return;
+    } else {
+      state.missedYesterday = true;
+      logMsg(`Day ${state.day} missed ❌. One more miss ends the run.`);
+      status("Missed today. Don't miss tomorrow!", "bad");
+    }
+  }
+  state.day += 1;
+  state.time = 6*60;
+  state.poopedToday = false;
+  const S = state.stats;
+  S.energy = clamp(S.energy + 30, 0, 100);
+  S.stress = clamp(S.stress - 10, 0, 100);
+  S.urge = clamp(S.urge - 8, 0, 100);
+
+  // New weather each day
+  rollWeather();
+
+  if (chance(0.35)) {
+    const roll = Math.random();
+    if (roll < .33) { S.motility = clamp(S.motility + 8, 0, 120); logMsg("You wake up feeling spry. Motility +8."); }
+    else if (roll < .66) { S.stress = clamp(S.stress - 8, 0, 100); logMsg("A restful night. Stress -8."); }
+    else { S.urge = clamp(S.urge + 12, 0, 120); logMsg("Morning gastrocolic reflex kicks in. Urge +12."); }
+  }
+  state.where = "room";
+  wobbleTo(64, 96);
+  if (manualSkip) logMsg("You skipped to a new day. New gut, who dis?");
+  checkCheevos();
+  save();
+}
+
+/* ---------------------------
+   Rendering
+----------------------------*/
+const cvs = el("game"); const ctx2 = cvs.getContext("2d");
+const world = { w: cvs.width, h: cvs.height, zones: {
+  room: { x: 0, y: 0, w: 160, h: 192, color: "#131728" },
+  bathroom: { x: 160, y: 0, w: 96, h: 112, color: "#182033" },
+  outside: { x: 160, y: 112, w: 96, h: 80, color: "#0f1b16" }
+}};
+
+function draw() {
+  const ctx = ctx2;
+  ctx.fillStyle = "#0b0e18"; ctx.fillRect(0,0,world.w,world.h);
+
+  for (const key of Object.keys(world.zones)) {
+    const z = world.zones[key];
+    ctx.fillStyle = z.color; ctx.fillRect(z.x, z.y, z.w, z.h);
+    ctx.fillStyle = "#232a48"; ctx.fillRect(z.x, z.y, z.w, 12);
+    ctx.fillStyle = "#9aa0a6"; ctx.font = "8px monospace"; ctx.fillText(key.toUpperCase(), z.x+3, z.y+9);
+  }
+
+  // toilet
+  ctx.fillStyle = "#cbd5e1"; ctx.fillRect(210, 62, 18, 14);
+  ctx.fillStyle = "#94a3b8"; ctx.fillRect(212, 60, 14, 4);
+  ctx.fillStyle = "#0b0e18"; ctx.fillRect(214, 63, 10, 4);
+
+  // bookshelf
+  ctx.fillStyle = "#5b3a29"; ctx.fillRect(10, 50, 30, 26);
+  ctx.fillStyle = "#7c4a34"; ctx.fillRect(10, 50, 30, 4);
+  for (let i=0;i<5;i++){ ctx.fillStyle = ["#ef4444","#22c55e","#eab308","#3b82f6","#a855f7"][i]; ctx.fillRect(12+i*5, 56, 4, 16); }
+
+  // sky outside gradient varies with time and weather tint
+  const grd = ctx.createLinearGradient(160,112,256,192);
+  const tday = (state.time % (24*60))/(24*60);
+  const baseA = [10,20,30], baseB = [64,120,200];
+  const tint = state.weather==="Rainy" ? [0,0,30] : state.weather==="Heatwave" ? [30,10,0] : state.weather==="Breezy" ? [0,20,0] : [0,0,0];
+  const skyA = addColor(lerpColor(baseA,[125,198,255], Math.sin(Math.PI*tday)), tint);
+  const skyB = addColor(lerpColor([6,10,18],baseB, Math.sin(Math.PI*tday)), tint);
+  grd.addColorStop(0, rgb(skyA)); grd.addColorStop(1, rgb(skyB));
+  ctx.fillStyle = grd; ctx.fillRect(160,112,96,80);
+
+  drawLeah(Math.round(state.pos.x), Math.round(state.pos.y));
+
+  ctx.fillStyle = "#9aa0a6"; ctx.font = "8px monospace";
+  ctx.fillText("Books: Relax", 10, 44);
+  ctx.fillText("Toilet", 210, 56);
+  ctx.fillText("Path: Walk", 170, 190);
+
+  // confetti particles
+  drawSparks(ctx);
+}
+function lerpColor(a,b,t){ return [Math.round(lerp(a[0],b[0],t)), Math.round(lerp(a[1],b[1],t)), Math.round(lerp(a[2],b[2],t))]; }
+function addColor(a,b){ return [clamp(a[0]+b[0],0,255), clamp(a[1]+b[1],0,255), clamp(a[2]+b[2],0,255)]; }
+function rgb([r,g,b]){ return `rgb(${r},${g},${b})`; }
+
+function drawLeah(x,y){
+  const ctx = ctx2;
+  ctx.fillStyle = "rgba(0,0,0,0.25)"; ctx.fillRect(x-6, y+10, 12, 3);
+  const skin = "#f1c27d", hair="#3b2f2f", shirt="#6ee7b7", pants="#334155", eye="#1f2937";
+  ctx.fillStyle = skin; ctx.fillRect(x-4, y-12, 8, 8);
+  ctx.fillStyle = hair; ctx.fillRect(x-5, y-12, 10, 3); ctx.fillRect(x-6, y-9, 2, 4);
+  ctx.fillStyle = eye; ctx.fillRect(x-2, y-9, 1,1); ctx.fillRect(x+1, y-9, 1,1);
+  ctx.fillStyle = shirt; ctx.fillRect(x-5, y-4, 10, 7);
+  ctx.fillStyle = skin; ctx.fillRect(x-7, y-4, 2, 6); ctx.fillRect(x+5, y-4, 2, 6);
+  ctx.fillStyle = pants; ctx.fillRect(x-4, y+3, 3, 7); ctx.fillRect(x+1, y+3, 3, 7);
+}
+
+let tween = null;
+function wobbleTo(x,y) {
+  const start = {x: state.pos.x, y: state.pos.y};
+  const end = {x,y};
+  const t0 = performance.now();
+  tween = (now)=>{
+    const t = Math.min(1, (now - t0)/500);
+    state.pos.x = lerp(start.x, end.x, t);
+    state.pos.y = lerp(start.y, end.y, t + Math.sin(now/60)*0.01);
+    if (t>=1) tween=null;
+  };
+}
+
+/* ---------------------------
+   Confetti
+----------------------------*/
+const sparks = [];
+function confetti(n=8){
+  for (let i=0;i<n;i++){
+    sparks.push({
+      x: state.pos.x, y: state.pos.y-8,
+      vx: rnd(-1.2,1.2), vy: rnd(-2.2,-0.8),
+      life: rnd(0.6,1.2), age:0, c: ["#e879f9","#60a5fa","#fbbf24","#34d399","#f472b6"][Math.floor(Math.random()*5)]
+    });
+  }
+}
+function drawSparks(ctx){
+  for (let i=sparks.length-1;i>=0;i--){
+    const p = sparks[i];
+    p.age += 1/60; p.x += p.vx; p.y += p.vy; p.vy += 0.06;
+    if (p.age > p.life) { sparks.splice(i,1); continue; }
+    ctx.fillStyle = p.c; ctx.fillRect(p.x, p.y, 2,2);
+  }
+}
+
+/* ---------------------------
+   Loop
+----------------------------*/
+function loop(now) {
+  const dt = (now - lastTick)/1000;
+  lastTick = now;
+
+  const advance = dt * minutesPerSecond;
+  state.time += advance;
+  tickMetabolism(advance);
+
+  if (tween) tween(now);
+
+  updateHUD();
+  draw();
+  checkDayWrap();
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ---------------------------
+   Tips & keys
+----------------------------*/
+setInterval(()=> {
+  const S = state.stats;
+  if (S.urge < 30 && S.fiber < 30) status("Tip: Beans boost Fiber → Urge.", "");
+  else if (S.stress > 60) status("Tip: Walk/Relax to drop Stress.", "");
+  else if (state.where !== "bathroom" && S.urge > 60) status("Tip: Sit on Toilet before trying.", "");
+}, 5000);
+
+const keyMap = {
+  KeyB: "feedBeans",
+  KeyW: "giveWater",
+  KeyT: "sitToilet",
+  KeyP: "tryPoop",
+  KeyR: "relax",
+  KeyK: "takeWalk",
+  KeyN: "nap",
+  KeyD: "nextDay",
+  KeyY: "yogurt",
+  KeyC: "coffee",
+  KeyL: "chili" // L for chili roulette (close enough)
+};
+window.addEventListener("keydown", (e)=>{
+  const act = keyMap[e.code];
+  if (act) { e.preventDefault(); actions[act](); Sound.click(); }
+});
+
+/* ---------------------------
+   Boot
+----------------------------*/
+if (!load()) {
+  logMsg("Welcome! Nudge Leah's gut: Fiber + Hydration + Motility ↑, Stress ↓, then Toilet + Try to Poop.");
+  logMsg("Keys: B beans, W water, K walk, R relax, T toilet, P poop, Y yogurt, C coffee, L chili, N nap, D next day.");
+}
+updateHUD();
+rollWeather();
+
+/* ---------------------------
+   Utilities
+----------------------------*/
+function fmt(n){ return Math.round(n); }
+</script>
+</body>
+</html>
