@@ -3,9 +3,692 @@
 <head>
 <meta charset="utf-8" />
 <title>Poop Leah Poop — Weirdcore</title>
-<!-- (full HTML code from my previous response goes here) -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<style>
+  :root {
+    --bg: #0b0d14;
+    --panel: #14182a;
+    --accent: #9ae6b4;
+    --accent2: #ffa94d;
+    --text: #e6e6f0;
+    --muted: #9aa0a6;
+    --danger: #ff6b6b;
+    --good: #8ce99a;
+    --odd: #f38ba8;
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans"; }
+  #root { display: grid; grid-template-columns: 1fr 400px; gap: 12px; padding: 12px; height: 100%; box-sizing: border-box; }
+  #left { display: grid; grid-template-rows: auto 1fr; gap: 8px; min-width: 280px; }
+  #titlebar { display:flex; align-items:center; justify-content:space-between; background: var(--panel); border:1px solid #202235; border-radius: 8px; padding: 8px 12px;}
+  #titlebar h1 { margin: 0; font-size: 18px; }
+  #titlebar .small { color: var(--muted); font-size: 12px; display:flex; gap:10px; flex-wrap:wrap; }
+  #gamewrap { background: var(--panel); border:1px solid #202235; border-radius: 8px; padding: 8px; display:grid; grid-template-rows: 1fr auto; }
+  canvas { width: 100%; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; background:#0e1220; border-radius: 6px; display:block; }
+  #hud { display:grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top:8px; }
+  .bar { background:#0d0f18; border:1px solid #1b1f30; border-radius:6px; padding:6px; }
+  .bar .label { font-size:11px; color:var(--muted); display:flex; justify-content:space-between; }
+  .gauge { height:8px; background:#0b0e16; border:1px solid #1b1f30; border-radius:4px; overflow:hidden; margin-top:4px; }
+  .fill { height:100%; background: linear-gradient(90deg, #5eead4, #60a5fa); width:0%; transition: width .2s ease-out; }
+  .fill.weird { background: linear-gradient(90deg, #f38ba8, #cba6f7); }
+  #right { display:grid; grid-template-rows: auto auto 1fr auto; gap: 8px; min-height: 0; }
+  .panel { background: var(--panel); border:1px solid #202235; border-radius: 8px; padding: 10px; }
+  #actions { display:grid; grid-template-columns: 1fr 1fr; gap:6px; }
+  button { background:#161a2a; color:var(--text); border:1px solid #2a3150; border-radius:6px; padding:10px 8px; font-weight:600; cursor:pointer; }
+  button:hover { border-color:#3a4370; }
+  button:active { transform: translateY(1px); }
+  button[disabled] { opacity:.5; cursor:not-allowed; }
+  .row { display:flex; gap:6px; flex-wrap: wrap; }
+  .pill { background:#121424; border:1px solid #242a45; padding:6px 8px; border-radius:999px; font-size:12px; color: var(--muted); }
+  #log { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; font-size:12px; color:#cbd5e1; height:100%; overflow:auto; white-space:pre-wrap; }
+  #footer { font-size: 12px; color: var(--muted); display:flex; align-items:center; justify-content:space-between; }
+  .good { color: var(--good); }
+  .bad { color: var(--danger); }
+  .odd { color: var(--odd); }
+  .popup { position: fixed; top: 16px; right: 16px; background:#101425; border:1px solid #2a3150; color:#e6e6f0; padding:10px 12px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,.35); font-size:13px; z-index:10; opacity:0; transform: translateY(-8px); transition: opacity .2s, transform .2s; }
+  .popup.show { opacity:1; transform: translateY(0); }
+  #audioUI { display:flex; align-items:center; gap:8px; }
+  input[type="range"] { width: 120px; }
+  /* Rhythm mini-game overlay */
+  #rhythm { position: fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); z-index:20; }
+  #rhythm .box { background:#0f1322; border:1px solid #2a3150; padding:16px; border-radius:10px; width:360px; text-align:center; }
+  #meterWrap { width: 100%; height:10px; background:#0a0d18; border:1px solid #1b1f30; border-radius:6px; overflow:hidden; margin:12px 0; position:relative; }
+  #slider { position:absolute; top:0; bottom:0; width:18px; background:#60a5fa; }
+  #sweet { position:absolute; top:0; bottom:0; background:rgba(154,230,180,.25); border-left:1px dashed #9ae6b4; border-right:1px dashed #9ae6b4; }
+  .kbd { font-family: ui-monospace, monospace; background:#121424; border:1px solid #242a45; padding:0 6px; border-radius:4px; }
+  @media (max-width: 900px) { #root { grid-template-columns: 1fr; grid-template-rows: auto auto; } }
+</style>
 </head>
 <body>
-<!-- ... rest of the HTML body and script ... -->
+<div id="root">
+  <div id="left">
+    <div id="titlebar">
+      <h1>💩 Poop Leah Poop — Weirdcore</h1>
+      <div class="small">
+        <span>Day <span id="dayNum">1</span></span>
+        <span><span id="timeStr">06:00</span></span>
+        <span>Streak <span id="streak">0</span></span>
+        <span>Weather <span id="weatherTag">Sunny</span></span>
+        <span>Chaos <span id="chaosTag">Calm</span></span>
+      </div>
+    </div>
+    <div id="gamewrap">
+      <canvas id="game" width="256" height="192" aria-label="Poop Leah Poop game canvas"></canvas>
+      <div id="hud">
+        <div class="bar"><div class="label"><span>Fiber</span><span id="fiberVal">0</span></div><div class="gauge"><div class="fill" id="fiberBar"></div></div></div>
+        <div class="bar"><div class="label"><span>Hydration</span><span id="hydrationVal">0</span></div><div class="gauge"><div class="fill" id="hydrationBar"></div></div></div>
+        <div class="bar"><div class="label"><span>Stress</span><span id="stressVal">0</span></div><div class="gauge"><div class="fill" id="stressBar"></div></div></div>
+        <div class="bar"><div class="label"><span>Motility</span><span id="motilityVal">0</span></div><div class="gauge"><div class="fill" id="motilityBar"></div></div></div>
+        <div class="bar"><div class="label"><span>Urge</span><span id="urgeVal">0</span></div><div class="gauge"><div class="fill" id="urgeBar"></div></div></div>
+        <div class="bar"><div class="label"><span>Energy</span><span id="energyVal">0</span></div><div class="gauge"><div class="fill" id="energyBar"></div></div></div>
+        <div class="bar"><div class="label"><span>Weirdness</span><span id="weirdVal">0</span></div><div class="gauge"><div class="fill weird" id="weirdBar"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="right">
+    <div class="panel">
+      <div class="row" style="margin-bottom:6px;">
+        <span class="pill">Goal: poop ≥ 1× / day</span>
+        <span class="pill">Day length: ~90s</span>
+        <span class="pill">Weirdness unlocks chaos</span>
+        <span class="pill">Autosaves</span>
+      </div>
+      <div id="actions">
+        <button id="feedBeans">Beans 🫘</button>
+        <button id="giveWater">Water 💧</button>
+        <button id="takeWalk">Walk 🚶</button>
+        <button id="relax">Relax 📖</button>
+        <button id="sitToilet">Sit 🚽</button>
+        <button id="tryPoop" class="accent">Try 💩 (Mini-game)</button>
+        <button id="yogurt">Yogurt 🥣</button>
+        <button id="coffee">Coffee ☕</button>
+        <button id="chili">Chili 🌶️</button>
+        <button id="fartRocket">Fart Rocket 🫧</button>
+        <button id="dance">Dance Party 🪩</button>
+        <button id="petMicrobes">Pet Microbe Choir 🦠</button>
+        <button id="summonKing">Summon Toilet King 👑🚽</button>
+        <button id="nextDay">Skip ⏭️</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <div><strong>Status:</strong> <span id="status">Ready</span></div>
+        <div id="audioUI">
+          🔊 <input type="range" min="0" max="1" step="0.01" id="vol">
+          <button id="muteBtn" title="Mute / Unmute">Mute</button>
+        </div>
+      </div>
+      <div style="margin-top:6px">
+        <strong>House Rules:</strong>
+        <div style="font-size:12px; color:var(--muted); line-height:1.4; margin-top:4px;">
+          Fiber + Water + Motility raise the 💩 urge. Stress ruins vibes. <span class="odd">Weirdness</span> invites visitors, portals, and funky physics.
+          When you press <span class="kbd">Try</span>, play a tiny rhythm mini-game: hit <span class="kbd">Space</span> when the slider is inside the green zone. The better your timing, the higher your odds.
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="min-height: 170px;">
+      <strong>Event Log</strong>
+      <div id="log"></div>
+    </div>
+
+    <div id="footer" class="panel">
+      <div class="row">
+        <button id="reset">Reset Save</button>
+        <button id="testSnd">Test Sound</button>
+      </div>
+      <div>Built with canvas, pixels & beeps • Weirdcore v2.0</div>
+    </div>
+  </div>
+</div>
+
+<div id="popup" class="popup" role="status" aria-live="polite"></div>
+
+<!-- Rhythm mini-game overlay -->
+<div id="rhythm" aria-hidden="true">
+  <div class="box">
+    <div style="margin-bottom:6px;"><strong>Focus your chi.</strong> Hit <span class="kbd">Space</span> with the beat!</div>
+    <div id="meterWrap">
+      <div id="sweet"></div>
+      <div id="slider"></div>
+    </div>
+    <div style="font-size:12px; color:var(--muted)">Press <span class="kbd">Esc</span> to bail.</div>
+  </div>
+</div>
+
+<script>
+/* ---------------------------
+   Utilities
+----------------------------*/
+const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+const rnd = (a,b)=>Math.random()*(b-a)+a;
+const chance = (p)=>Math.random()<p;
+function fmtTime(mins){ let m = Math.floor(mins) % (24*60); let h = Math.floor(m/60), mm = m%60; return String(h).padStart(2,'0')+":"+String(mm).padStart(2,'0'); }
+
+const SAVE_KEY = "poop-leah-weirdcore-v20";
+
+/* ---------------------------
+   WebAudio: tiny synth
+----------------------------*/
+const Sound = (() => {
+  const ctx = new (window.AudioContext||window.webkitAudioContext)();
+  let master = ctx.createGain(); master.gain.value = 0.6; master.connect(ctx.destination);
+  let muted = false;
+
+  function envTone({type="sine", freq=440, dur=0.15, a=0.01, d=0.06, s=0.25, r=0.09, vol=0.4, bend=0}) {
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type; osc.frequency.value = freq;
+    if (bend) {
+      const target = Math.max(40, freq*(1+bend));
+      try { osc.frequency.exponentialRampToValueAtTime(target, t0 + Math.max(0.05, dur*0.9)); } catch {}
+    }
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(vol, t0 + a);
+    g.gain.linearRampToValueAtTime(vol*s, t0 + a + d);
+    g.gain.linearRampToValueAtTime(0.0001, t0 + dur + r);
+    osc.connect(g); g.connect(master);
+    osc.start(t0); osc.stop(t0 + dur + r + 0.05);
+  }
+
+  function noise({dur=0.12, vol=0.3, lp=1600}) {
+    const t0 = ctx.currentTime;
+    const buffer = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i=0;i<data.length;i++) data[i] = (Math.random()*2-1);
+    const src = ctx.createBufferSource(); src.buffer = buffer;
+    const g = ctx.createGain(); g.gain.value = vol;
+    const flt = ctx.createBiquadFilter(); flt.type="lowpass"; flt.frequency.value = lp;
+    src.connect(flt); flt.connect(g); g.connect(master);
+    src.start(t0); src.stop(t0 + dur);
+  }
+
+  return {
+    ctx,
+    setVolume(v){ master.gain.value = clamp(v,0,1); },
+    toggleMute(v){ muted=!muted; master.gain.value = muted?0:v; return muted; },
+    click(){ envTone({type:"square", freq:420, dur:0.07, vol:0.22}); },
+    bean(){ envTone({type:"triangle", freq:200, dur:0.12, vol:0.35}); },
+    water(){ noise({dur:0.10, vol:0.15, lp:1200}); envTone({type:"sine", freq:820, dur:0.05, vol:0.2}); },
+    walk(){ envTone({type:"square", freq:160, dur:0.06, vol:0.18}); },
+    relax(){ envTone({type:"sine", freq:340, dur:0.22, vol:0.18, bend:-0.25}); },
+    toilet(){ envTone({type:"triangle", freq:250, dur:0.12, vol:0.25}); },
+    try(){ envTone({type:"sawtooth", freq:240, dur:0.12, vol:0.22}); },
+    success(){ noise({dur:0.08, vol:0.25, lp:2500}); envTone({type:"square", freq:520, dur:0.14, vol:0.28}); envTone({type:"square", freq:660, dur:0.18, vol:0.24}); },
+    fail(){ envTone({type:"sawtooth", freq:180, dur:0.22, vol:0.2, bend:-0.4}); },
+    nap(){ envTone({type:"sine", freq:180, dur:0.25, vol:0.18}); },
+    popup(){ envTone({type:"triangle", freq:720, dur:0.12, vol:0.24}); },
+    coffee(){ envTone({type:"square", freq:880, dur:0.08, vol:0.24}); },
+    yogurt(){ envTone({type:"sine", freq:480, dur:0.1, vol:0.22}); },
+    chili(){ envTone({type:"sawtooth", freq:560, dur:0.1, vol:0.24}); },
+    fart(){ noise({dur:0.18, vol:0.28, lp:600}); envTone({type:"square", freq:120, dur:0.1, vol:0.18, bend:-0.6}); },
+    dance(){ envTone({type:"square", freq:300, dur:0.1, vol:0.2}); envTone({type:"square", freq:360, dur:0.1, vol:0.2}); },
+    king(){ envTone({type:"sawtooth", freq:240, dur:0.4, vol:0.3}); },
+    portal(){ envTone({type:"sine", freq:420, dur:0.3, vol:0.25, bend:-0.5}); },
+  };
+})();
+
+/* ---------------------------
+   State
+----------------------------*/
+const defaultState = () => ({
+  day: 1, time: 6*60, streak: 0,
+  missedYesterday: false, poopedToday: false,
+  weather: "Sunny", chaos: 0, // 0 calm -> 100 chaos
+  stats: { fiber: 20, hydration: 35, stress: 25, motility: 20, urge: 10, energy: 70, weird: 10 },
+  pos: { x: 64, y: 96 }, where: "room",
+  cheevos: {},
+  flags: { sawPortal:false }
+});
+let state = load() || defaultState();
+let lastTick = performance.now();
+let daySeconds = 90;
+let minutesPerSecond = (24*60) / daySeconds;
+
+/* ---------------------------
+   Save/Load/UI refs
+----------------------------*/
+function save(){ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+function load(){ try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } catch(e){ return null; } }
+function resetSave(){ localStorage.removeItem(SAVE_KEY); state = defaultState(); logMsg("Save reset. Fresh bowels, fresh chaos."); }
+
+const el=(id)=>document.getElementById(id);
+const dayNum=el("dayNum"), timeStr=el("timeStr"), streak=el("streak"), weatherTag=el("weatherTag"), chaosTag=el("chaosTag");
+const fiberBar=el("fiberBar"), hydrationBar=el("hydrationBar"), stressBar=el("stressBar");
+const motilityBar=el("motilityBar"), urgeBar=el("urgeBar"), energyBar=el("energyBar"), weirdBar=el("weirdBar");
+const fiberVal=el("fiberVal"), hydrationVal=el("hydrationVal"), stressVal=el("stressVal");
+const motilityVal=el("motilityVal"), urgeVal=el("urgeVal"), energyVal=el("energyVal"), weirdVal=el("weirdVal");
+const statusEl=el("status"), logEl=el("log"), popupEl=el("popup");
+const volSlider=el("vol"), muteBtn=el("muteBtn");
+const rhythmEl = el("rhythm"), sliderEl = el("slider"), meterWrap=el("meterWrap"), sweetEl=el("sweet");
+
+/* ---------------------------
+   HUD + Log
+----------------------------*/
+function updateHUD(){
+  dayNum.textContent = state.day;
+  timeStr.textContent = fmtTime(state.time);
+  streak.textContent = state.streak;
+  weatherTag.textContent = state.weather;
+  chaosTag.textContent = state.chaos<30?"Calm":state.chaos<60?"Odd":"Bonkers";
+  const S=state.stats;
+  const setBar=(bar,val)=>bar.style.width = clamp(val,0,100)+"%";
+  setBar(fiberBar,S.fiber); fiberVal.textContent = Math.round(S.fiber);
+  setBar(hydrationBar,S.hydration); hydrationVal.textContent = Math.round(S.hydration);
+  setBar(stressBar,S.stress); stressVal.textContent = Math.round(S.stress);
+  setBar(motilityBar,S.motility); motilityVal.textContent = Math.round(S.motility);
+  setBar(urgeBar,S.urge); urgeVal.textContent = Math.round(S.urge);
+  setBar(energyBar,S.energy); energyVal.textContent = Math.round(S.energy);
+  setBar(weirdBar,S.weird); weirdVal.textContent = Math.round(S.weird);
+}
+function status(msg, cls=""){ statusEl.textContent = msg; statusEl.className = cls; }
+function logMsg(text){ const now = fmtTime(state.time); logEl.textContent += `[${now}] ${text}\n`; logEl.scrollTop = logEl.scrollHeight; }
+function popup(msg){ popupEl.textContent = msg; popupEl.classList.add("show"); Sound.popup(); setTimeout(()=>popupEl.classList.remove("show"), 1500); }
+
+/* ---------------------------
+   Weather/Chaos/Metabolism
+----------------------------*/
+function weatherWalkMultiplier(){ return state.weather==="Breezy"?1.1:state.weather==="Rainy"?0.85:state.weather==="Heatwave"?0.75:1; }
+function rollWeather(){ const r=Math.random(); state.weather = r<0.55?"Sunny":r<0.75?"Breezy":r<0.92?"Rainy":"Heatwave"; logMsg(`Skies say: ${state.weather}.`); }
+
+let moonMode = false; // weird gravity event
+let ghostFriend = false;
+let tinyMoonY = 0;
+
+function tickMetabolism(mins){
+  const S=state.stats;
+  S.fiber = clamp(S.fiber - mins*0.03, 0, 120);
+  S.hydration = clamp(S.hydration - mins*0.04, 0, 120);
+  S.motility = clamp(S.motility - mins*0.025, 0, 120);
+  S.energy = clamp(S.energy - mins*0.03, 0, 100);
+  // urge growth
+  const gutSync = (S.fiber*0.022 + S.hydration*0.018 + S.motility*0.024) * (1 - S.stress/180);
+  const circadian = (state.time % (24*60));
+  const morningBoost = (circadian>360 && circadian<720) ? 1.25 : 1.0;
+  const weirdBoost = 1 + (S.weird/300); // weirdness nudges urge
+  S.urge = clamp(S.urge + mins*(0.06*morningBoost) + mins*gutSync/1000, 0, 140);
+  S.urge = clamp(S.urge * weirdBoost, 0, 140);
+
+  // chaos passives
+  state.chaos = clamp(state.chaos + (S.weird-20)*0.002*mins, 0, 100);
+
+  // random micro events
+  if (chance(mins/280)) {
+    const roll=Math.random();
+    if (roll<0.33){ S.stress=clamp(S.stress-3,0,100); logMsg("A kind thought wanders by."); }
+    else if (roll<0.66){ S.motility=clamp(S.motility+3,0,120); logMsg("Your microbes hum a barbershop chord."); }
+    else { S.hydration=clamp(S.hydration+2,0,120); logMsg("A cloud leaks a sip into your mouth."); }
+  }
+
+  // time-based weird events
+  if (Math.floor(state.time)%240===0 && !state.flags.sawPortal && S.weird>=40){
+    state.flags.sawPortal=true; popup("🌀 A cosmic toilet portal opens at midnight!"); Sound.portal();
+  }
+
+  if (S.stress>70) S.motility=clamp(S.motility - mins*0.02, 0, 120);
+}
+
+/* ---------------------------
+   Actions & Counters
+----------------------------*/
+const counters = { beans:0, coffee:0, yogurt:0, chili:0, farts:0, dances:0, microbes:0, king:0 };
+let coffeeTimer=0;
+
+const actions = {
+  feedBeans(){
+    const S=state.stats; const delta=chance(0.3)?22:15;
+    S.fiber=clamp(S.fiber+delta,0,120); S.energy=clamp(S.energy-5,0,100); S.stress=clamp(S.stress-3,0,100);
+    S.weird=clamp(S.weird+1,0,120);
+    advanceMinutes(10); counters.beans++; Sound.bean(); wobbleTo(64,96);
+    logMsg(`Beans enter the chat. Fiber +${delta}.`); status("Legume logic engaged.","good");
+  },
+  giveWater(){
+    const S=state.stats; S.hydration=clamp(S.hydration+18,0,120); S.energy=clamp(S.energy-2,0,100);
+    advanceMinutes(5); Sound.water(); logMsg("Hydration +18. Your organs applaud politely."); status("Glug glug.","good");
+  },
+  takeWalk(){
+    const S=state.stats; const mult=weatherWalkMultiplier();
+    S.motility=clamp(S.motility+16*mult,0,120); S.stress=clamp(S.stress-10,0,100); S.energy=clamp(S.energy-(12/mult),0,100);
+    state.where="outside"; wobbleTo(180,140); advanceMinutes(25); Sound.walk();
+    logMsg(`Walk (${state.weather}). Feet vote yes.`); status("Stride of pride.","good");
+  },
+  relax(){
+    const S=state.stats; S.stress=clamp(S.stress-14,0,100); S.energy=clamp(S.energy+8,0,100); S.weird=clamp(S.weird+2,0,120);
+    advanceMinutes(20); state.where="room"; wobbleTo(64,96); Sound.relax(); logMsg("Relaxation unlocked a secret shoulder. Stress melts.");
+  },
+  sitToilet(){
+    state.where="bathroom"; wobbleTo(220,80); advanceMinutes(6); const S=state.stats; S.stress=clamp(S.stress-4,0,100);
+    Sound.toilet(); logMsg("You assume the porcelain throne. The toilet whispers: \"Believe.\"");
+  },
+  yogurt(){
+    const S=state.stats; S.motility=clamp(S.motility+10,0,120); S.stress=clamp(S.stress-4,0,100);
+    advanceMinutes(8); counters.yogurt++; Sound.yogurt(); logMsg("Yogurt: the bacteria bazaar. Motility +10.");
+  },
+  coffee(){
+    const S=state.stats; const spike=20+Math.floor(Math.random()*10);
+    S.urge=clamp(S.urge+spike,0,140); S.energy=clamp(S.energy+6,0,100); coffeeTimer=60;
+    advanceMinutes(5); counters.coffee++; Sound.coffee(); logMsg(`Coffee casts Gastrocolic. Urge +${spike}. Jitters scheduled.`);
+  },
+  chili(){
+    const S=state.stats; const roll=Math.random(); let msg="";
+    if (roll<0.5){ S.motility=clamp(S.motility+16,0,120); msg="motility rocket"; }
+    else if (roll<0.8){ S.stress=clamp(S.stress+8,0,100); msg="spice anxiety"; }
+    else { S.urge=clamp(S.urge+24,0,140); msg="urgent rumble"; }
+    S.energy=clamp(S.energy-4,0,100); S.weird=clamp(S.weird+4,0,120);
+    advanceMinutes(12); counters.chili++; Sound.chili(); logMsg(`Chili roulette yields ${msg}.`);
+  },
+  fartRocket(){
+    const S=state.stats;
+    if (S.energy<10){ status("Too tired to toot.","bad"); return; }
+    S.energy=clamp(S.energy-10,0,100); S.stress=clamp(S.stress-6,0,100); S.weird=clamp(S.weird+6,0,120);
+    thrust( -rnd(2,4), -rnd(1,2) ); counters.farts++; Sound.fart(); confetti(10, ["#94f","#9f4","#ff9"]);
+    advanceMinutes(2); logMsg("Propulsive toot achieved. Newton nods.");
+  },
+  dance(){
+    const S=state.stats;
+    S.stress=clamp(S.stress-8,0,100); S.motility=clamp(S.motility+6,0,120); S.weird=clamp(S.weird+5,0,120);
+    advanceMinutes(10); counters.dances++; shake(200); Sound.dance(); logMsg("Dance party under the cosmic disco ball.");
+  },
+  petMicrobes(){
+    const S=state.stats;
+    S.motility=clamp(S.motility+8,0,120); S.stress=clamp(S.stress-5,0,100);
+    advanceMinutes(6); counters.microbes++; popup("🦠♪ Microbe Choir sings in D flat"); logMsg("You pet the microbes. They purr (wetly).");
+  },
+  summonKing(){
+    if (state.stats.weird<40){ status("The Toilet King ignores normies. Raise Weirdness.", "bad"); return; }
+    state.stats.stress = clamp(state.stats.stress-12,0,100);
+    state.stats.urge = clamp(state.stats.urge+12,0,140);
+    advanceMinutes(7); counters.king++; Sound.king(); popup("👑🚽 The Toilet King blesses your bowels."); logMsg("Royal benediction delivered.");
+  },
+  tryPoop(){
+    if (state.where!=="bathroom"){ status("Location penalty. Sit first!", "bad"); logMsg("You feel the gaze of the toilet from afar."); return; }
+    openRhythm(); // rhythm decides bonus
+  },
+  nap(){
+    const S=state.stats; S.energy=clamp(S.energy+22,0,100); S.stress=clamp(S.stress-6,0,100);
+    advanceMinutes(40); state.where="room"; wobbleTo(40,150); Sound.nap(); logMsg("Power nap achieved. A small universe resets.");
+  },
+  nextDay(){ endOfDay(true); }
+};
+
+// coffee aftershock tick
+setInterval(()=>{
+  if (coffeeTimer>0){
+    coffeeTimer-=5;
+    if (coffeeTimer<=0){ state.stats.stress=clamp(state.stats.stress+12,0,100); state.stats.energy=clamp(state.stats.energy-8,0,100); logMsg("Coffee jitters roll in on tiny skateboards. Stress +12."); }
+  }
+}, 1000);
+
+/* ---------------------------
+   Rhythm Mini-game
+----------------------------*/
+let rhythmActive=false, sliderDir=1, sliderPos=0, rhythmScore=0;
+function openRhythm(){
+  rhythmActive=true; rhythmScore=0; sliderPos=0; sliderDir=1;
+  rhythmEl.style.display="flex"; rhythmEl.setAttribute("aria-hidden","false"); Sound.try();
+  // position sweet zone relative to width
+  const W = meterWrap.clientWidth;
+  const sweetWidth = Math.max(60, Math.floor(W*0.24));
+  const sweetLeft = Math.floor((W - sweetWidth)/2);
+  sweetEl.style.left = sweetLeft + "px";
+  sweetEl.style.width = sweetWidth + "px";
+  status("Focus… press Space in the green!", "odd");
+}
+function closeRhythm(){ rhythmActive=false; rhythmEl.style.display="none"; rhythmEl.setAttribute("aria-hidden","true"); resolvePoop(); }
+function rhythmLoop(){
+  if (!rhythmActive) { requestAnimationFrame(rhythmLoop); return; }
+  const W = meterWrap.clientWidth;
+  const maxPos = Math.max(0, W - 18); // slider width
+  sliderPos += 6*sliderDir; // px per frame
+  if (sliderPos<0){ sliderPos=0; sliderDir=1; }
+  if (sliderPos>maxPos){ sliderPos=maxPos; sliderDir=-1; }
+  sliderEl.style.left = sliderPos+"px";
+  requestAnimationFrame(rhythmLoop);
+}
+requestAnimationFrame(rhythmLoop);
+
+window.addEventListener("keydown", (e)=>{
+  if (!rhythmActive) return;
+  if (e.code==="Space"){
+    e.preventDefault();
+    const W = meterWrap.clientWidth;
+    const sweetL = sweetEl.offsetLeft;
+    const sweetR = sweetL + sweetEl.clientWidth;
+    const center = clamp(sliderPos+9, 0, W);
+    const dist = center < sweetL ? sweetL-center : center > sweetR ? center-sweetR : 0;
+    let hit = 0;
+    if (dist===0){ hit = 1.0; popup("✨ PERFECT"); }
+    else if (dist<Math.max(12, W*0.04)){ hit = 0.6; popup("👍 GOOD"); }
+    else if (dist<Math.max(24, W*0.07)){ hit = 0.3; popup("🙂 OK"); }
+    else { hit = 0; popup("😬 MISS"); }
+    rhythmScore = Math.max(rhythmScore, hit);
+    sliderEl.style.transform = "scaleY(1.6)";
+    setTimeout(()=>sliderEl.style.transform="scaleY(1)",120);
+  } else if (e.code==="Escape"){
+    closeRhythm();
+  }
+});
+window.addEventListener("keyup",(e)=>{ if (e.code==="Space" && rhythmActive){ closeRhythm(); }});
+
+/* ---------------------------
+   Resolve Poop Attempt
+----------------------------*/
+function resolvePoop(){
+  const S=state.stats;
+  const locationBonus = 1.15;
+  const urgeScore = S.urge * locationBonus;
+  const calmFactor = clamp(100 - S.stress, 10, 100) / 100;
+  const energyFactor = clamp(S.energy, 20, 100) / 100;
+  const base = urgeScore * calmFactor * energyFactor;
+  const threshold = 60 + Math.min(20, (state.day-1)*1.2);
+  const miniBonus = 1 + rhythmScore*0.6 + (S.weird>=70?0.1:0);
+  const result = base * miniBonus;
+
+  advanceMinutes(6);
+
+  if (result >= threshold && S.urge >= 35){
+    const relief = Math.min(50, 22 + Math.round((result-threshold)/2));
+    S.urge = clamp(S.urge - relief, 0, 100);
+    S.stress = clamp(S.stress - 14, 0, 100);
+    S.energy = clamp(S.energy + 10, 0, 100);
+    S.motility = clamp(S.motility - 4, 0, 100);
+    state.poopedToday = true; confetti(10); Sound.success();
+    status("Poop achieved!","good");
+    logMsg(`💩 SUCCESS! Rhythm bonus ${(miniBonus*100-100).toFixed(0)}%. Relief -${relief}.`);
+  } else {
+    S.stress = clamp(S.stress + 6, 0, 100); Sound.fail();
+    status("No dice. Build the urge, calm the mind.","bad");
+    logMsg("Fate says not yet. The toilet shrugs.");
+  }
+}
+
+/* ---------------------------
+   Day cycle
+----------------------------*/
+function endOfDay(manual){
+  if (state.poopedToday){ state.streak+=1; state.missedYesterday=false; logMsg(`Day ${state.day} complete ✅. Streak +1!`); status("Daily gut quest complete.","good"); }
+  else {
+    if (state.missedYesterday){ logMsg(`Missed again ❌. The colon forms a union. Soft reset.`); state = defaultState(); save(); return; }
+    state.missedYesterday=true; logMsg(`Missed today ❌. Tomorrow the bowels demand excellence.`);
+  }
+  state.day+=1; state.time=6*60; state.poopedToday=false; state.where="room";
+  const S=state.stats; S.energy=clamp(S.energy+30,0,100); S.stress=clamp(S.stress-10,0,100); S.urge=clamp(S.urge-8,0,100);
+  rollWeather(); state.flags.sawPortal=false; moonMode=false; ghostFriend=false;
+  if (chance(0.5)){ S.weird=clamp(S.weird+Math.floor(rnd(1,6)),0,120); logMsg("You wake with a mysterious theme song."); }
+  if (manual) logMsg("You skip-kicked into a new day.");
+  save();
+}
+
+/* ---------------------------
+   Rendering
+----------------------------*/
+const cvs = document.getElementById("game"); const ctx = cvs.getContext("2d");
+const world = { w:cvs.width, h:cvs.height, zones:{
+  room:{x:0,y:0,w:160,h:192,color:"#131728"},
+  bathroom:{x:160,y:0,w:96,h:112,color:"#182033"},
+  outside:{x:160,y:112,w:96,h:80,color:"#0f1b16"}
+}};
+
+let tween=null, shakeT=0, vx=0, vy=0;
+
+function wobbleTo(x,y){ const start={x:state.pos.x,y:state.pos.y}; const end={x,y}; const t0=performance.now(); tween=(now)=>{ const t=Math.min(1,(now-t0)/500); state.pos.x=lerp(start.x,end.x,t); state.pos.y=lerp(start.y,end.y,t+Math.sin(now/60)*0.01); if(t>=1) tween=null; }; }
+function thrust(ax, ay){ vx+=ax; vy+=ay; }
+function shake(ms){ shakeT=Math.max(shakeT, ms); }
+
+function draw(){
+  ctx.fillStyle="#0b0e18"; ctx.fillRect(0,0,world.w,world.h);
+  for(const k of Object.keys(world.zones)){ const z=world.zones[k]; ctx.fillStyle=z.color; ctx.fillRect(z.x,z.y,z.w,z.h); ctx.fillStyle="#232a48"; ctx.fillRect(z.x,z.y,z.w,12); ctx.fillStyle="#9aa0a6"; ctx.font="8px monospace"; ctx.fillText(k.toUpperCase(), z.x+3, z.y+9); }
+  ctx.fillStyle="#cbd5e1"; ctx.fillRect(210,62,18,14); ctx.fillStyle="#94a3b8"; ctx.fillRect(212,60,14,4); ctx.fillStyle="#0b0e18"; ctx.fillRect(214,63,10,4);
+  ctx.fillStyle="#5b3a29"; ctx.fillRect(10,50,30,26); ctx.fillStyle="#7c4a34"; ctx.fillRect(10,50,30,4);
+  for(let i=0;i<5;i++){ ctx.fillStyle=["#ef4444","#22c55e","#eab308","#3b82f6","#a855f7"][i]; ctx.fillRect(12+i*5,56,4,16); }
+  const grd = ctx.createLinearGradient(160,112,256,192); const tday=(state.time%(24*60))/(24*60);
+  const tint = state.weather==="Rainy" ? [0,0,30] : state.weather==="Heatwave" ? [30,10,0] : state.weather==="Breezy" ? [0,20,0] : [0,0,0];
+  const skyA = addColor(lerpColor([10,20,30],[125,198,255], Math.sin(Math.PI*tday)), tint);
+  const skyB = addColor(lerpColor([6,10,18],[64,120,200], Math.sin(Math.PI*tday)), tint);
+  grd.addColorStop(0, rgb(skyA)); grd.addColorStop(1, rgb(skyB)); ctx.fillStyle=grd; ctx.fillRect(160,112,96,80);
+
+  if (ghostFriend){ ctx.fillStyle="rgba(255,255,255,.4)"; ctx.fillRect(30,20,10,10); }
+  if (moonMode){ ctx.fillStyle="#ddd"; ctx.fillRect(200, tinyMoonY, 12,12); }
+
+  drawLeah(Math.round(state.pos.x), Math.round(state.pos.y));
+  drawBean(Math.round(state.pos.x-12), Math.round(state.pos.y+6));
+
+  ctx.fillStyle="#9aa0a6"; ctx.font="8px monospace"; ctx.fillText("Books: Relax",10,44); ctx.fillText("Toilet",210,56); ctx.fillText("Path: Walk",170,190);
+
+  drawSparks(ctx);
+}
+
+function lerpColor(a,b,t){ return [Math.round(lerp(a[0],b[0],t)), Math.round(lerp(a[1],b[1],t)), Math.round(lerp(a[2],b[2],t))]; }
+function addColor(a,b){ return [clamp(a[0]+b[0],0,255), clamp(a[1]+b[1],0,255), clamp(a[2]+b[2],0,255)]; }
+function rgb([r,g,b]){ return `rgb(${r},${g},${b})`; }
+
+function drawLeah(x,y){
+  const sh=shakeT>0?rnd(-1,1):0;
+  ctx.fillStyle="rgba(0,0,0,0.25)"; ctx.fillRect(x-6+sh, y+10+sh, 12,3);
+  const skin="#f1c27d", hair="#3b2f2f", shirt="#6ee7b7", pants="#334155", eye="#1f2937";
+  ctx.fillStyle=skin; ctx.fillRect(x-4,y-12,8,8);
+  ctx.fillStyle=hair; ctx.fillRect(x-5,y-12,10,3); ctx.fillRect(x-6,y-9,2,4);
+  ctx.fillStyle=eye; ctx.fillRect(x-2,y-9,1,1); ctx.fillStyle=eye; ctx.fillRect(x+1,y-9,1,1);
+  ctx.fillStyle=shirt; ctx.fillRect(x-5,y-4,10,7);
+  ctx.fillStyle=skin; ctx.fillRect(x-7,y-4,2,6); ctx.fillRect(x+5,y-4,2,6);
+  ctx.fillStyle=pants; ctx.fillRect(x-4,y+3,3,7); ctx.fillRect(x+1,y+3,3,7);
+}
+function drawBean(x,y){
+  ctx.fillStyle="#8b5cf6"; ctx.fillRect(x,y,6,4);
+  ctx.fillStyle="#000"; ctx.fillRect(x+1,y+1,1,1);
+}
+
+/* ---------------------------
+   Particles
+----------------------------*/
+const sparks=[];
+function confetti(n=8, palette=["#e879f9","#60a5fa","#fbbf24","#34d399","#f472b6"]){
+  for(let i=0;i<n;i++) sparks.push({x:state.pos.x,y:state.pos.y-8,vx:rnd(-1.2,1.2),vy:rnd(-2.2,-0.8),life:rnd(0.6,1.2),age:0,c:palette[Math.floor(Math.random()*palette.length)]});
+}
+function drawSparks(ctx){
+  for(let i=sparks.length-1;i>=0;i--){ const p=sparks[i]; p.age+=1/60; p.x+=p.vx; p.y+=p.vy; p.vy+=0.06; if(p.age>p.life){ sparks.splice(i,1); continue; } ctx.fillStyle=p.c; ctx.fillRect(p.x,p.y,2,2); }
+}
+
+/* ---------------------------
+   Loop
+----------------------------*/
+let tween=null, shakeT=0, vx=0, vy=0;
+function loop(now){
+  const dt=(now-lastTick)/1000; lastTick=now;
+  state.pos.x = clamp(state.pos.x + vx, 10, world.w-10);
+  state.pos.y = clamp(state.pos.y + vy, 20, world.h-10);
+  vx*=0.90; vy=(vy+(moonMode?-0.05:0.04))*0.96;
+  if (Math.abs(vx)<0.01) vx=0; if (Math.abs(vy)<0.01) vy=0;
+
+  const advance = dt*minutesPerSecond; state.time += advance; tickMetabolism(advance);
+  if (tween) tween(now);
+  if (shakeT>0) shakeT-=dt*1000;
+
+  randomWeird();
+
+  updateHUD(); draw(); checkDayWrap();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ---------------------------
+   Weird Events
+----------------------------*/
+function randomWeird(){
+  const S=state.stats;
+  if (!ghostFriend && S.weird>35 && chance(0.0015)){ ghostFriend=true; logMsg("A friendly bathroom ghost offers a towel."); }
+  if (!moonMode && S.weird>55 && chance(0.001)){ moonMode=true; tinyMoonY = rnd(10,40); logMsg("A tiny moon drifts in. Gravity gets… negotiable."); }
+  const mins=Math.floor(state.time)%(24*60);
+  if (mins===23*60 && state.flags.sawPortal){ Sound.portal(); popup("🌀 Portal hums. Tomorrow beckons."); }
+}
+
+/* ---------------------------
+   Time helpers
+----------------------------*/
+function advanceMinutes(mins){ state.time+=mins; tickMetabolism(mins); checkDayWrap(); save(); }
+function checkDayWrap(){ if (state.time>=24*60) endOfDay(false); }
+
+/* ---------------------------
+   Wire buttons/keys
+----------------------------*/
+for (const [id, fn] of Object.entries({
+  feedBeans: actions.feedBeans,
+  giveWater: actions.giveWater,
+  takeWalk: actions.takeWalk,
+  relax: actions.relax,
+  sitToilet: actions.sitToilet,
+  tryPoop: actions.tryPoop,
+  yogurt: actions.yogurt,
+  coffee: actions.coffee,
+  chili: actions.chili,
+  fartRocket: actions.fartRocket,
+  dance: actions.dance,
+  petMicrobes: actions.petMicrobes,
+  summonKing: actions.summonKing,
+  nextDay: actions.nextDay
+})) {
+  const btn = document.getElementById(id);
+  if (btn) btn.addEventListener('click', ()=>{ fn(); Sound.click(); });
+}
+
+document.getElementById("reset").addEventListener("click", ()=>{ resetSave(); save(); Sound.click(); });
+document.getElementById("testSnd").addEventListener("click", ()=> Sound.success());
+volSlider.value=0.6; Sound.setVolume(volSlider.valueAsNumber);
+volSlider.addEventListener("input", ()=> Sound.setVolume(volSlider.valueAsNumber));
+muteBtn.addEventListener("click", ()=>{ const m=Sound.toggleMute(volSlider.valueAsNumber); muteBtn.textContent = m ? "Unmute" : "Mute"; });
+
+const keyMap = {
+  KeyB:"feedBeans", KeyW:"giveWater", KeyK:"takeWalk", KeyR:"relax", KeyT:"sitToilet", KeyP:"tryPoop",
+  KeyY:"yogurt", KeyC:"coffee", KeyL:"chili", KeyF:"fartRocket", KeyD:"dance", KeyM:"petMicrobes",
+  KeyG:"summonKing", KeyN:"nap", KeyX:"nextDay"
+};
+window.addEventListener("keydown", (e)=>{
+  const act = keyMap[e.code];
+  if(!act) return;
+  e.preventDefault();
+  if (act==="nap") actions.nap(); else if (actions[act]) actions[act]();
+  Sound.click();
+});
+
+/* ---------------------------
+   Boot
+----------------------------*/
+if (!load()){
+  logMsg("Welcome to Weirdcore mode. Raise Weirdness. Meet ghosts. Poop anyway.");
+  logMsg("Keys: B beans, W water, K walk, R relax, T sit, P try, Y yogurt, C coffee, L chili, F fart, D dance, M microbes, G king, N nap, X next day.");
+}
+updateHUD(); rollWeather();
+
+/* ---------------------------
+   Color helpers (used by draw)
+----------------------------*/
+function lerpColor(a,b,t){ return [Math.round(lerp(a[0],b[0],t)), Math.round(lerp(a[1],b[1],t)), Math.round(lerp(a[2],b[2],t))]; }
+function addColor(a,b){ return [clamp(a[0]+b[0],0,255), clamp(a[1]+b[1],0,255), clamp(a[2]+b[2],0,255)]; }
+function rgb([r,g,b]){ return `rgb(${r},${g},${b})`; }
+
+</script>
 </body>
 </html>
